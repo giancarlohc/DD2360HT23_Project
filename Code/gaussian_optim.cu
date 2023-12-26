@@ -77,7 +77,10 @@ create_matrix(float *m, int size){
 
 int main(int argc, char *argv[])
 {
-  printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", TPB, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
+    //begin timing
+    struct timeval time_start;
+    gettimeofday(&time_start, NULL);	
+    printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", TPB, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
     int verbose = 1;
     int i, j;
     char flag;
@@ -143,9 +146,7 @@ int main(int argc, char *argv[])
 
     //InitProblemOnce(filename);
     InitPerRun();
-    //begin timing
-    struct timeval time_start;
-    gettimeofday(&time_start, NULL);	
+
     
     // run kernels
     ForwardSub();
