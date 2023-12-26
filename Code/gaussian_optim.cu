@@ -277,7 +277,6 @@ __global__ void Fan1(float *m_cuda, float *a_cuda, int Size, int t)
 
 	if(threadIdx.x + blockIdx.x * blockDim.x >= Size-1-t) return;
 	*(m_cuda+Size*(blockDim.x*blockIdx.x+threadIdx.x+t+1)+t) = *(a_cuda+Size*(blockDim.x*blockIdx.x+threadIdx.x+t+1)+t) / *(a_cuda+Size*t+t);
-__syncthreads();
 
 
 }
@@ -299,7 +298,6 @@ __global__ void Fan2(float *m_cuda, float *a_cuda, float *b_cuda,int Size, int j
 	if(yidx == 0){
 		b_cuda[xidx+1+t] -= m_cuda[Size*(xidx+1+t)+(yidx+t)] * b_cuda[t];
 	}
-  __syncthreads();
 
 }
 
@@ -346,8 +344,8 @@ void ForwardSub()
     // begin timing kernels
     struct timeval time_start;
     gettimeofday(&time_start, NULL);
-	// for (t=0; t<(Size-1); t++) {
-  for (t=0; t<1; t++) {
+	for (t=0; t<(Size-1); t++) {
+  // for (t=0; t<1; t++) {
 		Fan1<<<dimGrid,dimBlock>>>(m_cuda,a_cuda,Size,t);
 		cudaThreadSynchronize();
 		Fan2<<<dimGridXY,dimBlockXY>>>(m_cuda,a_cuda,b_cuda,Size,Size-t,t);
