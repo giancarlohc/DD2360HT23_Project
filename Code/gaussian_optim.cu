@@ -77,7 +77,7 @@ create_matrix(float *m, int size){
 
 int main(int argc, char *argv[])
 {
-  printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", MAXBLOCKSIZE, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
+  printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", TPB, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
     int verbose = 1;
     int i, j;
     char flag;
@@ -325,10 +325,10 @@ void ForwardSub()
 	cudaMemcpy(a_cuda, a, Size * Size * sizeof(float),cudaMemcpyHostToDevice );
 	cudaMemcpy(b_cuda, b, Size * sizeof(float),cudaMemcpyHostToDevice );
 	
-	int block_size,grid_size;
+	// int block_size,grid_size;
 	
-	block_size = (Size/TPB) + (!(Size%TPB)? 0:1);
-	grid_size = TPB;
+	// block_size = (Size/TPB) + (!(Size%TPB)? 0:1);
+	// grid_size = TPB;
 	//printf("1d grid size: %d\n",grid_size);
 
 
@@ -348,7 +348,6 @@ void ForwardSub()
     gettimeofday(&time_start, NULL);
 	// for (t=0; t<(Size-1); t++) {
   for (t=0; t<1; t++) {
-
 		Fan1<<<dimGrid,dimBlock>>>(m_cuda,a_cuda,Size,t);
 		cudaThreadSynchronize();
 		Fan2<<<dimGridXY,dimBlockXY>>>(m_cuda,a_cuda,b_cuda,Size,Size-t,t);
