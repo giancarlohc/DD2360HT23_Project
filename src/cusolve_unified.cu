@@ -4,6 +4,8 @@
 #include <cusolverDn.h>
 #include <iostream>
 #include <cmath>
+#include <sys/time.h>
+
 
 #define CheckCudaError(stmt)                                               \
   do {                                                               \
@@ -109,6 +111,10 @@ void InitProblemOnce(char* filename, int* size, double** a, double** b, double**
 }
 
 int main(int argc, char* argv[]) {
+    //begin timing
+    struct timeval time_start;
+    gettimeofday(&time_start, NULL);	
+
     cusolverDnHandle_t cusolverH = NULL;
     cudaStream_t stream = NULL;
     int size;
@@ -231,6 +237,12 @@ int main(int argc, char* argv[]) {
     cudaFree(devIpiv);
     cudaFree(devInfo);
     cusolverDnDestroy(cusolverH);
+
+    //end timing
+    struct timeval time_end;
+    gettimeofday(&time_end, NULL);
+    unsigned int time_total = (time_end.tv_sec * 1000000 + time_end.tv_usec) - (time_start.tv_sec * 1000000 + time_start.tv_usec);
+    printf("\nTime total (including memory transfers)\t%f sec\n", time_total * 1e-6);
 
     return 0;
 }
