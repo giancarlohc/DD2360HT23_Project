@@ -92,28 +92,24 @@ void InitProblemOnce(char* filename, int* size, double** a, double** b, double**
     }
     printf("The input matrix A's size is: %d\n", *size);
 
+    // Allocate memory for a and b
     cudaMallocManaged(a, *size * *size * sizeof(double));
     cudaMallocManaged(b, *size * sizeof(double));
 
+    // Advise the CUDA memory manager to set the preferred location for a and b
     cudaMemAdvise(a, *size * *size * sizeof(double), cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
     cudaMemAdvise(b, *size * sizeof(double), cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
 
-    // *a = (double*)malloc((*size) * (*size) * sizeof(double));
     InitMat(fp, *a, *size);
-
-    // *b = (double*)malloc((*size) * sizeof(double));
     InitAry(fp, *b, *size);
-
     *slnVec = (double*)malloc((*size) * sizeof(double));
     InitAry(fp, *slnVec, *size);
-
-    // *X = (double*)malloc((*size) * sizeof(double));
 }
 
 int main(int argc, char* argv[]) {
     //begin timing
     struct timeval time_start;
-    gettimeofday(&time_start, NULL);	
+    gettimeofday(&time_start, NULL);
 
     cusolverDnHandle_t cusolverH = NULL;
     cudaStream_t stream = NULL;
@@ -143,44 +139,28 @@ int main(int argc, char* argv[]) {
     cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
     cusolverDnSetStream(cusolverH, stream);
 
-    // Device memory management
-    // double* d_A = NULL, * d_B = NULL;
-    // CheckCudaError(cudaMalloc((void**)&d_A, sizeof(double) * size * size));
-    // CheckCudaError(cudaMalloc((void**)&d_B, sizeof(double) * size));
-
-
+    // Allocate memory for devIpiv and devInfo
     int* devIpiv, * devInfo;
     cudaMallocManaged(&devIpiv, size * sizeof(int));
     cudaMallocManaged(&devInfo, sizeof(int));
+
+    // Advise the CUDA memory manager to set the preferred location for devIpiv, devInfo, A and B
     cudaMemAdvise(devIpiv, size * sizeof(int), cudaMemAdviseSetPreferredLocation, id);
     cudaMemAdvise(devInfo, sizeof(int), cudaMemAdviseSetPreferredLocation, id);
-
-    // CheckCudaError(cudaMalloc((void**)&devIpiv, size * sizeof(int)));
-    // CheckCudaError(cudaMalloc((void**)&devInfo, sizeof(int)));
-
-    // Copy matrices from host to device
-    // CheckCudaError(cudaMemcpy(d_A, A, sizeof(double) * size * size, cudaMemcpyHostToDevice));
-    // CheckCudaError(cudaMemcpy(d_B, B, sizeof(double) * size, cudaMemcpyHostToDevice));
-     
     cudaMemAdvise(A, size * size * sizeof(double), cudaMemAdviseSetPreferredLocation, id);
     cudaMemAdvise(B, size * sizeof(double), cudaMemAdviseSetPreferredLocation, id);
 
+    // Asynchronously prefetch A and B to GPU
     cudaMemPrefetchAsync(A, size * size * sizeof(double), id);
-    cudaMemPrefetchAsync(B, size * sizeof(double), id);  
+    cudaMemPrefetchAsync(B, size * sizeof(double), id);
 
-
-
-
-    // Allocate workspace
-    double* workspace; 
+    // Allocate memory for workspace
+    double* workspace;
     int workspace_size;
     CUSOLVER_CHECK(cusolverDnDgetrf_bufferSize(cusolverH, size, size, A, size, &workspace_size));
     cudaDeviceSynchronize();
     cudaMallocManaged(&workspace, workspace_size * sizeof(double));
     cudaMemAdvise(workspace, workspace_size * sizeof(double), cudaMemAdviseSetPreferredLocation, id);
-
-    // CheckCudaError(cudaMalloc(&workspace, workspace_size * sizeof(double)));
-    // printf("%d", workspace_size);
 
     // LU factorization
     double start = cpuSecond();
@@ -188,19 +168,7 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
     double stop = cpuSecond();
     printf("Time for LU factorization: %f sec\n", stop - start);
-    
-    // int* hIpiv;
-    // hIpiv = (int*)malloc(size * sizeof(int));
-    // cudaMemcpy(hIpiv, devIpiv, size * sizeof(int), cudaMemcpyDeviceToHost);
-    // CheckCudaError(cudaMemcpy(A, d_A, sizeof(double) * size * size, cudaMemcpyDeviceToHost));
-    
-    // PrintMat(A, size); 
-    // for(int i = 0; i < size; i++)
-    // {
-    //   printf("%d ", *(hIpiv + i));
-    // }
-    printf("\n");
-    
+
     // Solve Ax = B
     start = cpuSecond();
     CUSOLVER_CHECK(cusolverDnDgetrs(cusolverH, CUBLAS_OP_N, size, 1, A, size, devIpiv, B, size, devInfo));
@@ -208,9 +176,8 @@ int main(int argc, char* argv[]) {
     stop = cpuSecond();
     printf("Time for solving Ax = B: %f sec\n", stop - start);
 
-    // Copy result back to host
-    // CheckCudaError(cudaMemcpy(X, d_B, sizeof(double) * size, cudaMemcpyDeviceToHost));
-    cudaMemPrefetchAsync(B, size * sizeof(double), cudaCpuDeviceId);  
+    // Asynchronously prefetch B to CPU
+    cudaMemPrefetchAsync(B, size * sizeof(double), cudaCpuDeviceId);
 
     // Print solution
     // printf("Solution:\n");
@@ -230,9 +197,6 @@ int main(int argc, char* argv[]) {
     cudaFree(A);
     cudaFree(B);
     free(slnVec);
-    // cudaFree(X);
-    // cudaFree(d_A);
-    // cudaFree(d_B);
     cudaFree(workspace);
     cudaFree(devIpiv);
     cudaFree(devInfo);
