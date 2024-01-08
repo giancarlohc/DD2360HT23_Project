@@ -106,7 +106,7 @@ void InitProblemOnce(char* filename, int* size, double** a, double** b, double**
 int main(int argc, char* argv[]) {
     //begin timing
     struct timeval time_start;
-    gettimeofday(&time_start, NULL);	
+    gettimeofday(&time_start, NULL);
 
     cusolverDnHandle_t cusolverH = NULL;
     cudaStream_t stream = NULL;
@@ -147,9 +147,9 @@ int main(int argc, char* argv[]) {
     // Copy matrices from host to device
     CheckCudaError(cudaMemcpy(d_A, A, sizeof(double) * size * size, cudaMemcpyHostToDevice));
     CheckCudaError(cudaMemcpy(d_B, B, sizeof(double) * size, cudaMemcpyHostToDevice));
-     
+
     // Allocate workspace
-    double* workspace; 
+    double* workspace;
     int workspace_size;
     CUSOLVER_CHECK(cusolverDnDgetrf_bufferSize(cusolverH, size, size, d_A, size, &workspace_size));
     cudaDeviceSynchronize();
@@ -162,19 +162,12 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
     double stop = cpuSecond();
     printf("Time for LU factorization: %f sec\n", stop - start);
-    
+
     int* hIpiv;
     hIpiv = (int*)malloc(size * sizeof(int));
     cudaMemcpy(hIpiv, devIpiv, size * sizeof(int), cudaMemcpyDeviceToHost);
     CheckCudaError(cudaMemcpy(A, d_A, sizeof(double) * size * size, cudaMemcpyDeviceToHost));
-    
-    // PrintMat(A, size); 
-    // for(int i = 0; i < size; i++)
-    // {
-    //   printf("%d ", *(hIpiv + i));
-    // }
-    // printf("\n");
-    
+
     // Solve Ax = B
     start = cpuSecond();
     CUSOLVER_CHECK(cusolverDnDgetrs(cusolverH, CUBLAS_OP_N, size, 1, d_A, size, devIpiv, d_B, size, devInfo));
